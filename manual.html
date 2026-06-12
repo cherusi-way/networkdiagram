@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#141b26">
+<title>操作マニュアル — Network Diagram Builder</title>
+<style>
+  :root{
+    --chrome:#141b26; --chrome-2:#1c2533; --card:#19222f;
+    --line:#2c3a4f; --ink:#dbe5f1; --ink-dim:#8294ab;
+    --accent:#3fb8af; --accent-dim:#1f8f87;
+    --warn:#e0b15c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html{scroll-behavior:smooth;scroll-padding-top:96px}
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }
+  body{
+    font-family:system-ui,-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;
+    background:var(--chrome);color:var(--ink);line-height:1.75;font-size:14.5px;
+    /* キャンバスと同じ方眼を薄く敷く */
+    background-image:
+      linear-gradient(var(--chrome-2) 1px, transparent 1px),
+      linear-gradient(90deg, var(--chrome-2) 1px, transparent 1px);
+    background-size:28px 28px;
+  }
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em}
+  a{color:var(--accent)}
+  b{color:#fff;font-weight:700}
+  kbd{
+    font-family:ui-monospace,Menlo,monospace;font-size:11.5px;
+    background:var(--chrome-2);border:1px solid var(--line);border-bottom-width:2px;
+    border-radius:5px;padding:1px 6px;white-space:nowrap;
+  }
+  .ui{  /* アプリ内のボタン名表記 */
+    display:inline-block;background:var(--chrome-2);border:1px solid var(--line);
+    border-radius:6px;padding:0 7px;font-size:.92em;color:var(--accent);
+    font-weight:700;white-space:nowrap;line-height:1.6;
+  }
+
+  /* ── 固定ヘッダー: アプリのトップバー+タブ行を踏襲 ── */
+  header{
+    position:sticky;top:0;z-index:50;background:var(--chrome);
+    border-bottom:1px solid var(--line);
+  }
+  .hbar{display:flex;align-items:center;gap:10px;padding:10px 14px}
+  .brand{font-weight:700;letter-spacing:.06em;font-size:12px;color:var(--accent);white-space:nowrap}
+  .brand small{display:block;color:var(--ink-dim);font-weight:400;letter-spacing:.02em;font-size:10px}
+  .hbar .sp{flex:1}
+  .backApp{
+    font-size:12px;font-weight:700;color:var(--accent);text-decoration:none;
+    border:1px solid var(--line);border-radius:8px;padding:7px 12px;background:var(--chrome-2);
+    white-space:nowrap;
+  }
+  #search{
+    width:130px;max-width:34vw;background:var(--chrome-2);border:1px solid var(--line);
+    border-radius:8px;color:var(--ink);font-size:13px;padding:7px 10px;outline:none;
+    font-family:inherit;
+  }
+  #search:focus{border-color:var(--accent)}
+  nav{
+    display:flex;gap:6px;overflow-x:auto;padding:0 14px 10px;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;
+  }
+  nav::-webkit-scrollbar{display:none}
+  nav a{
+    flex:0 0 auto;font-size:12px;font-weight:700;text-decoration:none;color:var(--ink-dim);
+    border:1px solid var(--line);border-radius:99px;padding:5px 12px;background:var(--chrome-2);
+  }
+  nav a:focus-visible, .backApp:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  main{max-width:880px;margin:0 auto;padding:22px 16px 90px}
+
+  /* ── ヒーロー ── */
+  .hero{padding:18px 2px 6px}
+  .hero h1{font-size:clamp(24px,6vw,34px);line-height:1.3;letter-spacing:.01em}
+  .hero h1 em{font-style:normal;color:var(--accent)}
+  .hero p{color:var(--ink-dim);margin-top:8px;max-width:600px}
+
+  /* ── セクション ── */
+  section{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:20px 18px;margin-top:18px;
+  }
+  section h2{
+    font-size:17px;display:flex;align-items:center;gap:10px;margin-bottom:6px;
+    scroll-margin-top:96px;
+  }
+  section h2 .pic{
+    flex:0 0 34px;height:34px;display:grid;place-items:center;
+    background:var(--chrome-2);border:1px solid var(--line);border-radius:9px;font-size:16px;
+  }
+  section .lead{color:var(--ink-dim);font-size:13px;margin-bottom:10px}
+  h3{font-size:13.5px;color:var(--accent);margin:18px 0 6px;letter-spacing:.03em}
+
+  /* 操作リスト(アプリ内ガイドと同じ2カラム) */
+  .ops{margin-top:4px}
+  .op{display:flex;gap:12px;padding:7px 0;border-top:1px dashed var(--line);font-size:13.5px}
+  .op:first-child{border-top:none}
+  .op .k{flex:0 0 118px;color:var(--ink-dim);font-weight:700;font-size:12.5px;padding-top:1px}
+  .op .v{flex:1;min-width:0}
+  @media (max-width:480px){
+    .op{flex-direction:column;gap:1px}
+    .op .k{flex:none}
+  }
+
+  /* 手順 */
+  ol.steps{margin:6px 0 4px;padding-left:0;list-style:none;counter-reset:s}
+  ol.steps li{
+    counter-increment:s;display:flex;gap:12px;padding:8px 0;font-size:13.5px;
+    border-top:1px dashed var(--line);
+  }
+  ol.steps li:first-child{border-top:none}
+  ol.steps li::before{
+    content:counter(s);flex:0 0 26px;height:26px;border-radius:50%;
+    background:var(--chrome-2);border:1px solid var(--accent-dim);color:var(--accent);
+    display:grid;place-items:center;font-weight:700;font-size:12.5px;margin-top:1px;
+  }
+
+  /* ── シグネチャ: ジェスチャーカード ── */
+  .gestures{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:12px}
+  .gcard{
+    background:var(--chrome);border:1px solid var(--line);border-radius:12px;
+    padding:14px;position:relative;overflow:hidden;
+  }
+  .gcard .gname{font-weight:700;font-size:14px;color:#fff}
+  .gcard .gdoes{font-size:12px;color:var(--accent);font-weight:700;margin-bottom:10px}
+  .gfig{
+    height:88px;border-radius:9px;background:var(--chrome-2);
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:22px 22px;position:relative;margin-bottom:9px;
+  }
+  .node{
+    position:absolute;width:34px;height:26px;border-radius:6px;
+    border:2px solid var(--accent);background:var(--chrome);
+  }
+  .finger{position:absolute;font-size:20px;filter:grayscale(.2)}
+  .wave{
+    position:absolute;width:30px;height:30px;border:2px solid var(--accent);
+    border-radius:50%;opacity:.55;
+  }
+  .wave.w2{width:44px;height:44px;opacity:.28}
+  .arrow{position:absolute;height:2px;background:var(--accent)}
+  .arrow::after{
+    content:'';position:absolute;right:-1px;top:-4px;
+    border:5px solid transparent;border-left:7px solid var(--accent);
+  }
+  .clock{
+    position:absolute;font-size:10px;font-weight:700;color:var(--warn);
+    background:var(--chrome);border:1px solid var(--warn);border-radius:99px;padding:1px 7px;
+  }
+  .gcard p{font-size:12px;color:var(--ink-dim);line-height:1.7}
+
+  /* 画面の見かた図 */
+  .screen{
+    border:1px solid var(--line);border-radius:14px;background:var(--chrome);
+    overflow:hidden;margin-top:10px;font-size:11px;
+  }
+  .scr-row{display:flex;align-items:stretch;border-bottom:1px solid var(--line)}
+  .scr-row:last-child{border-bottom:none}
+  .zone{padding:9px 10px;color:var(--ink-dim)}
+  .zone b{color:var(--accent);display:block;font-size:11.5px}
+  .zone.canvas{
+    flex:1;min-height:120px;display:flex;align-items:center;justify-content:center;
+    background-image:linear-gradient(var(--chrome-2) 1px,transparent 1px),linear-gradient(90deg,var(--chrome-2) 1px,transparent 1px);
+    background-size:20px 20px;text-align:center;
+  }
+  .zone.side{flex:0 0 96px;border-left:1px solid var(--line);display:flex;flex-direction:column;justify-content:flex-end;gap:4px;text-align:right}
+
+  /* 表 */
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}
+  th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+  th{background:var(--chrome-2);color:var(--accent);font-size:11.5px;white-space:nowrap}
+  td .mono{word-break:break-all}
+  .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+  /* 補足・注意 */
+  .tip,.warn{
+    border-radius:10px;padding:10px 12px;font-size:12.5px;margin-top:10px;line-height:1.7;
+  }
+  .tip{background:rgba(63,184,175,.08);border:1px solid var(--accent-dim)}
+  .tip::before{content:'💡 ';opacity:.9}
+  .warn{background:rgba(224,177,92,.07);border:1px solid #6e5a30;color:#e8d6ad}
+  .warn::before{content:'⚠ '}
+
+  /* FAQ */
+  details{border-top:1px dashed var(--line);padding:9px 0}
+  details:first-of-type{border-top:none}
+  summary{cursor:pointer;font-weight:700;font-size:13.5px;list-style:none;display:flex;gap:8px}
+  summary::before{content:'Q.';color:var(--accent);font-weight:700}
+  summary::-webkit-details-marker{display:none}
+  details p{padding:7px 0 2px 24px;font-size:13px;color:var(--ink-dim)}
+  details p b{color:var(--ink)}
+
+  .nohit{display:none!important}
+  #noResult{display:none;text-align:center;color:var(--ink-dim);padding:40px 0;font-size:13px}
+
+  footer{
+    max-width:880px;margin:0 auto;padding:0 16px 50px;
+    color:var(--ink-dim);font-size:11.5px;text-align:center;
+  }
+  footer a{color:var(--ink-dim)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hbar">
+    <div class="brand">NETWORK DIAGRAM BUILDER<small>操作マニュアル</small></div>
+    <div class="sp"></div>
+    <input id="search" type="search" placeholder="🔍 ページ内検索" aria-label="マニュアル内を検索">
+    <a class="backApp" href="./">▶ アプリを開く</a>
+  </div>
+  <nav aria-label="章">
+    <a href="#start">はじめに</a>
+    <a href="#install">インストール</a>
+    <a href="#screen">画面の見かた</a>
+    <a href="#gesture">基本操作</a>
+    <a href="#device">機器</a>
+    <a href="#link">接続(配線)</a>
+    <a href="#parts">メモ・枠・バス</a>
+    <a href="#multi">複数選択</a>
+    <a href="#template">テンプレート</a>
+    <a href="#view">表示設定</a>
+    <a href="#sheet">シートとプロジェクト</a>
+    <a href="#data">データ入出力</a>
+    <a href="#check">検証・IP管理</a>
+    <a href="#hidden">気づきにくい操作</a>
+    <a href="#recipe">活用レシピ</a>
+    <a href="#faq">FAQ</a>
+    <a href="#keys">PCキー</a>
+  </nav>
+</header>
+
+<main>
+  <div class="hero">
+    <h1>指先だけで、<em>現場のネットワーク図</em>を。</h1>
+    <p>Network Diagram Builder は、スマホ・タブレットのタップ操作を前提に設計されたネットワーク構成図エディタです。機器の台帳・IP管理・検証までこの1画面で完結し、データはすべてお使いの端末の中に保存されます。</p>
+  </div>
+
+  <!-- ───────── はじめに ───────── -->
+  <section id="start">
+    <h2><span class="pic">🚀</span>はじめての1枚 — 5分クイックスタート</h2>
+    <p class="lead">まずは「ルーター → スイッチ → PC」の3台をつないでみましょう。これだけで操作の8割が身につきます。</p>
+    <ol class="steps">
+      <li><span>画面下の<b>パレット</b>から「ルーター」を選び、キャンバスの空白を<b>タップ</b>して配置します。続けて「L2スイッチ」「PC」も置きます。</span></li>
+      <li><span>ルーターを<b>フリック</b>(触れてすぐ動かす)し、指をスイッチの上まで運んで離すと<b>接続線</b>が引かれます。同様にスイッチ → PC もつなぎます。</span></li>
+      <li><span>機器を<b>タップ</b>すると編集シートが開きます。名前・IPアドレス・拠点などを入力してみましょう(すべて任意項目です)。</span></li>
+      <li><span>空白を<b>すばやく2回タップ</b>すると図全体が画面に収まります(右下の<span class="ui">全体</span>でも同じ)。</span></li>
+      <li><span>☰メニュー →「画像・印刷で共有」から<b>PNG保存</b>や<b>印刷/PDF</b>で書き出せます。作図内容は常時自動保存されているので、保存操作を意識する必要はありません。</span></li>
+    </ol>
+    <div class="tip">操作に迷ったら、アプリ内の ☰メニュー → <span class="ui">操作ガイド(チートシート)</span>でいつでも要点を確認できます。「ボタンが見当たらない」「この操作どうやるの?」と思ったら<a href="#hidden">気づきにくい操作の早見表</a>へ。</div>
+  </section>
+
+  <!-- ───────── インストール ───────── -->
+  <section id="install">
+    <h2><span class="pic">📲</span>インストールと更新</h2>
+    <p class="lead">ブラウザで開くだけでも使えますが、ホーム画面に追加すると全画面のアプリとして起動でき、オフラインでも動作します。</p>
+    <h3>ホーム画面への追加</h3>
+    <div class="ops">
+      <div class="op"><div class="k">iPhone / iPad</div><div class="v">Safariでこのサイトを開き、共有ボタン(□↑)→ <span class="ui">ホーム画面に追加</span></div></div>
+      <div class="op"><div class="k">Android</div><div class="v">Chromeで開き、右上「︙」→ <span class="ui">ホーム画面に追加</span>。またはアプリ内 ☰メニュー →「アプリとして使う」のインストールボタン</div></div>
+      <div class="op"><div class="k">PC</div><div class="v">Chrome / Edge のアドレスバー右端に表示されるインストールアイコンをクリック</div></div>
+    </div>
+    <h3>オフライン動作と更新</h3>
+    <div class="ops">
+      <div class="op"><div class="k">オフライン</div><div class="v">一度開けば内容が端末にキャッシュされ、<b>電波のない現場でも起動・編集できます</b>。作図データも端末内保存なので通信は不要です。</div></div>
+      <div class="op"><div class="k">更新</div><div class="v">新しい版が公開されると、起動のたびに裏で自動取得され<b>次の起動から反映</b>されます。すぐ反映したい場合は ☰メニュー →「アプリとして使う」→ <span class="ui">🔄 最新版を再取得して再読み込み</span>。更新しても作図データは消えません。</div></div>
+    </div>
+    <div class="warn">データはブラウザ内(localStorage / IndexedDB)に保存されます。<b>ブラウザの「サイトデータ削除」やプライベートモードではデータが消える</b>ため、大事な図は ☰メニュー →「データの保存・取込」→「JSONを保存」で定期的にバックアップしてください。</div>
+  </section>
+
+  <!-- ───────── 画面の見かた ───────── -->
+  <section id="screen">
+    <h2><span class="pic">🗺</span>画面の見かた</h2>
+    <div class="screen" role="img" aria-label="画面レイアウト: 上からトップバー、シートタブ、中央キャンバス(右下に操作ボタン)、下部パレット">
+      <div class="scr-row"><div class="zone"><b>トップバー</b>プロジェクト名(タップで切替)/ 検索 / Undo・Redo / ☰メニュー</div></div>
+      <div class="scr-row"><div class="zone"><b>シートタブ</b>タップで切替・もう一度タップで設定 / +で追加</div></div>
+      <div class="scr-row">
+        <div class="zone canvas"><b>キャンバス</b><br>ピンチで拡大縮小・1本指ドラッグでスクロール</div>
+        <div class="zone side"><b>右下ボタン</b>複数<br>表示<br>全体</div>
+      </div>
+      <div class="scr-row"><div class="zone"><b>パレット</b>カテゴリチップで絞り込み / 部品を選んで空白タップで配置 / テンプレート(長押しで管理)</div></div>
+    </div>
+    <div class="ops">
+      <div class="op"><div class="k">🔍 検索</div><div class="v">機器名・IP・型番・備考・メモなどを<b>全シート横断</b>で検索し、結果のタップでその機器へジャンプ。<span class="mono">10.0.0.0/22</span> のようなCIDR指定で範囲内のIPを持つ機器も探せます。</div></div>
+      <div class="op"><div class="k">☰メニュー</div><div class="v">機器一覧・図の検証・IP管理・データ入出力・画像出力など、図単位の機能の入口です。</div></div>
+      <div class="op"><div class="k"><span class="ui">表示</span>ボタン</div><div class="v">セグメント色分け・ダークキャンバス・線の既定スタイル・操作の調整(長押し時間など)…<b>見え方と作図の好み</b>はすべてここに集約されています。</div></div>
+    </div>
+  </section>
+
+  <!-- ───────── 基本ジェスチャー ───────── -->
+  <section id="gesture">
+    <h2><span class="pic">👆</span>基本操作 — 3つのジェスチャー</h2>
+    <p class="lead">機器への操作は「触れてからの動き」で分かれます。この3つを覚えればキャンバスは自由自在です。</p>
+    <div class="gestures">
+      <div class="gcard">
+        <div class="gname">タップ</div>
+        <div class="gdoes">→ 編集シートを開く</div>
+        <div class="gfig">
+          <div class="node" style="left:38%;top:34%"></div>
+          <div class="wave" style="left:calc(38% + 2px);top:30%"></div>
+          <div class="wave w2" style="left:calc(38% - 5px);top:23%"></div>
+          <div class="finger" style="left:calc(38% + 14px);top:46%">👆</div>
+        </div>
+        <p>触れて、動かさずに離す。名前・IP・ポート台帳などの編集シートが開きます。</p>
+      </div>
+      <div class="gcard">
+        <div class="gname">フリック<span style="color:var(--ink-dim);font-weight:400;font-size:11px">(すぐ動かす)</span></div>
+        <div class="gdoes">→ 接続線を引く</div>
+        <div class="gfig">
+          <div class="node" style="left:10%;top:38%"></div>
+          <div class="node" style="right:10%;top:38%;border-style:dashed;opacity:.7"></div>
+          <div class="arrow" style="left:32%;right:34%;top:48%"></div>
+          <div class="finger" style="left:42%;top:50%">👆</div>
+        </div>
+        <p>触れて<b>すぐ</b>動かし、相手の機器の上で離すと配線。空白で離せばキャンセルです。</p>
+      </div>
+      <div class="gcard">
+        <div class="gname">長押し → 動かす</div>
+        <div class="gdoes">→ 機器を移動</div>
+        <div class="gfig">
+          <div class="node" style="left:14%;top:50%;opacity:.4;border-style:dashed"></div>
+          <div class="node" style="left:48%;top:30%"></div>
+          <div class="clock" style="left:12%;top:16%">0.2秒</div>
+          <div class="arrow" style="left:26%;width:24%;top:44%;transform:rotate(-18deg)"></div>
+          <div class="finger" style="left:56%;top:42%">👆</div>
+        </div>
+        <p><b>少し押さえてから</b>動かすと移動。掴めた瞬間に端末が振動してお知らせします。</p>
+      </div>
+    </div>
+    <div class="tip">「すぐ」と「少し」の境目(長押し判定時間)は <span class="ui">表示</span> → <span class="ui">操作の調整</span>で 20〜400ms の間で好みに変えられます。フリック配線そのものをOFFにすることも可能です。</div>
+    <h3>そのほかの基本</h3>
+    <div class="ops">
+      <div class="op"><div class="k">連続配置</div><div class="v">パレットの部品を<b>すばやく2回タップ</b>(またはバナーの<span class="ui">連続</span>ON)で、同じ部品をタップするたびに配置できます。</div></div>
+      <div class="op"><div class="k">配置時に名前入力</div><div class="v"><span class="ui">表示</span> → <span class="ui">配置時に名前入力</span>をONにすると、置いた直後にその場で機器名を付けられます。</div></div>
+      <div class="op"><div class="k">全体表示</div><div class="v">空白をすばやく2回タップ、または右下<span class="ui">全体</span>。</div></div>
+      <div class="op"><div class="k">取り消し</div><div class="v">トップバーの ↶↷。履歴は<b>シート単位</b>で記録され、Undo時に「移動」「接続」など操作名がトーストで表示されます。シート削除やCSV取込の取り消しは、直後のトーストの<span class="ui">元に戻す</span>から。</div></div>
+      <div class="op"><div class="k">枠(グループ)</div><div class="v">枠は<b>枠線かラベルをタップ</b>して選択。内側は素通りなので、枠の中の機器も普段どおり操作できます。</div></div>
+    </div>
+  </section>
+
+  <!-- ───────── 機器 ───────── -->
+  <section id="device">
+    <h2><span class="pic">🖥</span>機器</h2>
+    <p class="lead">機器をタップすると編集シートが開きます。すべての項目は任意入力 — 図を描くだけでも、台帳として作り込んでも使えます。</p>
+    <div class="ops">
+      <div class="op"><div class="k">持てる情報</div><div class="v">ラベル(表示名)・ホスト名・IPアドレス・サブネットマスク・デフォルトGW・拠点・ベンダー・型番・シリアル番号・資産管理番号・保守期限・備考・ポート台帳。</div></div>
+      <div class="op"><div class="k">見た目の変更</div><div class="v">編集シートの<span class="ui">見た目で役割を表現</span>で、アイコン差し替え・スタイル3種(線画/塗り/タイル)・形(四角/ピル/六角形)・枠線の太さ・文字サイズ・機器サイズ(85〜150%)を変更。<b>コア機器を特大+塗り+太枠で目立たせる</b>といった表現ができます(種類や台帳の意味は変わりません)。</div></div>
+      <div class="op"><div class="k">二重化バッジ</div><div class="v">機器の編集で<b>冗長構成</b>(STACK / HA / CLUSTER / DR)を選ぶと、機器の角にバッジが付き、HAやスタックは<b>2台重なった見た目</b>になります。サブラベルに <span class="mono">Act/Stby</span> などを添えれば冗長構成が一目瞭然です。</div></div>
+      <div class="op"><div class="k">複製(連番)</div><div class="v">機器を選択 → ミニバーの<span class="ui">複製</span>で、<b>ラベル末尾の数字とIPの第4オクテットが未使用の次の番号に自動更新</b>されます(AP-01→AP-02、.11→.12)。同種の機器を並べる作業が一気に速くなります。</div></div>
+      <div class="op"><div class="k">ポート台帳</div><div class="v">「ポート台帳」に1行1ポートで定義すると、接続時にプルダウン選択でき、二重使用も警告されます。<span class="mono">Gi0/0 203.0.113.1/30 # 対ISP</span> のように<b>ポート単位のIP・VLAN・備考</b>も持てるため、ルーターの複数IP管理にも対応します。</div></div>
+      <div class="op"><div class="k">位置の固定</div><div class="v">編集シートの<span class="ui">位置を固定</span>で誤ドラッグを防止(🔒表示)。</div></div>
+      <div class="op"><div class="k">同名機器(全体図+詳細図)</div><div class="v">同じ機器(ホスト名またはラベルが同一)を<b>複数のシートに描けます</b>。編集シートに「他◯箇所にも掲載」と相違の有無が表示され、編集後は他シートへの反映やまとめて改名をトーストで提案。内容が食い違ったときは「図の検証」で一覧し、その場で揃えられます。</div></div>
+      <div class="op"><div class="k">リンク先シート</div><div class="v">機器の編集で<b>リンク先シート</b>を設定すると、その機器のタップで別シートへジャンプできます。全体図の「東京拠点」から拠点詳細図へ飛ぶ、といった<b>ドリルダウン構成</b>に。ジャンプ後は画面上部に<span class="ui">← 元のシート名</span>の戻るボタンが出ます。</div></div>
+    </div>
+  </section>
+
+  <!-- ───────── 接続 ───────── -->
+  <section id="link">
+    <h2><span class="pic">🔗</span>接続(配線)</h2>
+    <div class="ops">
+      <div class="op"><div class="k">線を引く</div><div class="v">機器をフリックして相手の上で離す。周囲の⊕ドラッグや、選択 → <span class="ui">接続</span> → 相手をタップでも引けます。接続中バナーの<span class="ui">連続</span>をONにすると同じ起点から次々つなげます。</div></div>
+      <div class="op"><div class="k">持てる情報</div><div class="v">両端のポート名・両端ラベル・VLAN(アクセス/トランク、<span class="mono">10,20,30-39</span>形式)・線種・回線速度(100M〜100G、太さに反映)・色・矢印・変更ステータス・ケーブル種別(Cat6A/OS2/DACなど)・備考(キャリア名・回線番号・契約帯域・障害時連絡先などWAN回線情報の置き場に)。</div></div>
+      <div class="op"><div class="k">線パレット</div><div class="v">線を選択すると<b>左上に線スタイルパレット</b>が出現。経路(直線/直角)・線種・回線速度を、編集シートを開かずワンタップで切り替えられます。</div></div>
+      <div class="op"><div class="k">既定スタイル</div><div class="v"><span class="ui">表示</span> → <span class="ui">線の既定スタイル</span>で「これから引く線」の書式をプリセットまたは個別指定。気に入った線ができたら、その線の編集の<span class="ui">この線のスタイルを既定にする</span>で取り込めます。</div></div>
+      <div class="op"><div class="k">付け替え・反転</div><div class="v">線を選択 → 両端の●をドラッグで別の機器へ付け替え。逆向きに引いてしまった線は<span class="ui">⇄ 両端の設定を入れ替え</span>でラベル・接続位置・矢印をワンタップ交換。</div></div>
+      <div class="op"><div class="k">経由点(迂回)</div><div class="v">線を選択 → <b>線上の「+」をドラッグ</b>で経由点を追加し、機器を避けて配線を曲げられます(1本あたり8個まで)。隣の点に重ねると削除。</div></div>
+      <div class="op"><div class="k">ポート即時選択</div><div class="v">ポート台帳を持つ機器を接続した直後、画面下のチップ列から両端のポートをその場で選択できます(使用中ポートは薄表示)。</div></div>
+      <div class="op"><div class="k">折れ・ラベル</div><div class="v">直角線は○で折れ位置を調整。中央ラベルはドラッグで移動できます。</div></div>
+    </div>
+  </section>
+
+  <!-- ───────── 作図部品 ───────── -->
+  <section id="parts">
+    <h2><span class="pic">📝</span>メモ・枠・バス(作図部品)</h2>
+    <p class="lead">パレットの<b>「作図」カテゴリ</b>には、機器以外の表現部品が入っています。</p>
+    <div class="ops">
+      <div class="op"><div class="k">グループ枠</div><div class="v">拠点・ラック・セキュリティゾーンなどの「まとまり」を四角で囲みます。<b>枠を動かすと中の機器も一緒に動く</b>ので、拠点単位のレイアウト調整に便利。選択は枠線かラベルをタップ(内側は素通り)。色とラベルを変更できます。</div></div>
+      <div class="op"><div class="k">メモ</div><div class="v">付箋スタイルの注記。サイズ・色を選べ、障害対応メモや作業予定の書き込みに。</div></div>
+      <div class="op"><div class="k">テキスト</div><div class="v">背景が透明な文字だけの注釈。図のタイトルや補足説明を、図の見た目を邪魔せずに置けます。</div></div>
+      <div class="op"><div class="k">バス(セグメントバー)</div><div class="v">横長のバーで<b>1つのネットワークセグメントを表現</b>します。バーに機器を接続すると縦線でぶら下がる、教科書でおなじみのバス型の描き方。バーは横にリサイズでき、セグメント名やネットワークアドレスをラベルに。<b>多数の機器が同居するセグメントを、線を張り巡らせずスッキリ描けます</b>。</div></div>
+    </div>
+  </section>
+
+  <!-- ───────── 複数選択 ───────── -->
+  <section id="multi">
+    <h2><span class="pic">⛶</span>複数選択と一括編集</h2>
+    <div class="ops">
+      <div class="op"><div class="k">選ぶ</div><div class="v">右下の<span class="ui">複数</span>ボタン → 機器・線・メモ・枠をタップで追加、または空白をなぞって範囲選択。なぞり選択では<b>選択した機器につながる線も自動で選ばれます</b>。</div></div>
+      <div class="op"><div class="k">できること</div><div class="v">一括編集(種類・拠点・マスク/GW・ステータス・色・回線速度・線種・VLANなど)・整列・等間隔・コピー&貼り付け(別シートへも可)・テンプレート登録・一括削除。</div></div>
+      <div class="op"><div class="k">一括置換</div><div class="v">一括編集内の<span class="ui">一括置換</span>で、コピーした拠点のIP(<span class="mono">10.1.→10.2.</span>)と名称(<span class="mono">A-→B-</span>)をまとめて付け替え。<b>拠点の横展開が数タップで終わります</b>。</div></div>
+      <div class="op"><div class="k">テンプレ登録</div><div class="v">選択した一式をパレットに登録して何度でも再利用できます。手順は次章「<a href="#template">テンプレート</a>」で詳しく。</div></div>
+    </div>
+  </section>
+
+
+  <!-- ───────── テンプレート ───────── -->
+  <section id="template">
+    <h2><span class="pic">📦</span>テンプレート — よく使う構成の再利用</h2>
+    <p class="lead">「標準拠点セット」「島ハブ+PC6台」のような<b>自分がよくコピペする一式</b>を部品化して、パレットから何度でも配置できます。大量展開の最強の時短機能です。</p>
+    <h3>登録する</h3>
+    <ol class="steps">
+      <li><span>右下の<span class="ui">複数</span>ボタンをONにして、登録したい機器を<b>なぞって範囲選択</b>(またはタップで追加)。選択した機器どうしの接続線・メモ・枠も一緒に登録されます。</span></li>
+      <li><span>選択中に表示されるバーの<span class="ui">テンプレ登録</span>をタップ。バーに見当たらないときは、バー右端の<b>「›」の先に隠れています</b>(横にスクロール)。</span></li>
+      <li><span>名前を付けて(例: 標準拠点セット)登録完了。</span></li>
+    </ol>
+    <div class="warn">線「だけ」は登録できません。両端の機器も含めて選択してください。</div>
+    <h3>配置する</h3>
+    <ol class="steps">
+      <li><span>パレットのカテゴリチップから<span class="ui">テンプレート</span>を選びます。</span></li>
+      <li><span>登録した一式が部品として並ぶので、通常の機器と同じく<b>選んで空白をタップ</b>。何度でも、別のシートにも配置できます。</span></li>
+    </ol>
+    <h3>管理する(共有・削除)</h3>
+    <div class="ops">
+      <div class="op"><div class="k">共有 / 削除</div><div class="v">パレットのテンプレートを<b>長押し</b>すると管理メニューが開きます。<span class="ui">全プロジェクトで共有</span>でどのプロジェクトからも使える共有テンプレート(🌐)に、<span class="ui">削除</span>で取り除けます(登録数に上限はありません)。</div></div>
+      <div class="op"><div class="k">中身の更新</div><div class="v">テンプレート自体の編集はできません。配置 → 修正 → <b>再登録して古い方を削除</b>、が更新の手順です。</div></div>
+    </div>
+    <div class="tip">配置後に<b>一括編集 → 一括置換</b>(<span class="mono">10.1.→10.2.</span> / <span class="mono">A-→B-</span>)を組み合わせると、テンプレートから複製した拠点のIPと機器名が数タップで付け替わります。拠点の量産はこのコンボが最速です。</div>
+  </section>
+
+  <!-- ───────── 表示設定 ───────── -->
+  <section id="view">
+    <h2><span class="pic">👁</span>表示と作図設定(右下「表示」)</h2>
+    <div class="ops">
+      <div class="op"><div class="k">セグメント色分け</div><div class="v">同一IPセグメントの機器を同色の背景で表示。サブネット構成がひと目で分かります。</div></div>
+      <div class="op"><div class="k">IPアドレス強調</div><div class="v">IPをチップ表示で強調(出力画像にも反映)。</div></div>
+      <div class="op"><div class="k">交差をまたぐ</div><div class="v">線の交差点を<b>半円で跨いで描画</b>し、T分岐との誤読を防ぎます(シート単位・出力にも反映)。</div></div>
+      <div class="op"><div class="k">変更ステータス</div><div class="v">全表示 → 更改後(廃止を隠す)→ 現行(新設を隠す)を巡回。<b>1枚の図で現行/更改後を切り替えて見せられます</b>。</div></div>
+      <div class="op"><div class="k">用紙ガイド</div><div class="v">A4/A3(横・縦)の比率枠を表示し、印刷時の収まりを見ながらレイアウトできます(出力には写りません)。</div></div>
+      <div class="op"><div class="k">下絵(フロア図)</div><div class="v">写真や図面画像をシート背景に敷いて、その上をなぞって作図(トレース)。濃さ・位置・大きさを調整でき、表示中は出力にも写ります(非表示にすれば図だけを出力)。</div></div>
+      <div class="op"><div class="k">レイヤー</div><div class="v">物理配線/論理フローなどを層に分けて表示切替。👁で表示、名前タップで作図先、⋯で名前変更・ソロ表示・削除。出力は表示中のレイヤーのみです。</div></div>
+      <div class="op"><div class="k">ダーク / ミニマップ</div><div class="v">キャンバスを暗く(出力は白のまま)。ミニマップはタップでジャンプ。</div></div>
+      <div class="op"><div class="k">操作の調整</div><div class="v">長押し判定時間(20〜400ms)・フリック配線のON/OFF・ブラウザのピンチ拡大許可など、操作感のカスタマイズはここ。</div></div>
+    </div>
+  </section>
+
+  <!-- ───────── シートとプロジェクト ───────── -->
+  <section id="sheet">
+    <h2><span class="pic">🗂</span>シートとプロジェクト</h2>
+    <p class="lead">「シート」は1枚の図、「プロジェクト」はシートの束(会社・案件単位)です。</p>
+    <div class="ops">
+      <div class="op"><div class="k">シート</div><div class="v">タブをタップで切替、表示中のタブをもう一度タップで設定(名前・複製・移動・削除)。タブ長押しでも削除でき、直後のトーストから復元可能。全シート横断の検索や、シート間のドリルダウンリンクにも対応します。</div></div>
+      <div class="op"><div class="k">プロジェクト</div><div class="v">左上のプロジェクト名をタップ(または ☰メニュー → プロジェクトの切替・管理)。複数の会社・複数の更改案を切り替えて管理でき、複製・改名・削除も可能です。</div></div>
+      <div class="op"><div class="k">自動保存と世代</div><div class="v">編集は常時自動保存。さらに<b>日次の世代バックアップ</b>が自動で残り(直近10世代)、プロジェクト管理から任意の日の状態に復元できます。</div></div>
+      <div class="op"><div class="k">差分着色</div><div class="v">☰メニュー →「編集ツール」→ <span class="ui">世代と比較して差分を着色</span>で、過去の世代と比べて 新設/変更/廃止 を自動でステータス付け。<b>変更レビューや作業報告にそのまま使えます</b>。</div></div>
+      <div class="op"><div class="k">図の情報</div><div class="v">☰メニュー → <span class="ui">図の情報</span>で、図のタイトル・版数・作成者・<b>改訂履歴</b>を管理。印刷/PDFのヘッダーや出力画像の図枠に反映されるので、<b>提出文書としての体裁</b>が整います。</div></div>
+    </div>
+  </section>
+
+  <!-- ───────── データ入出力 ───────── -->
+  <section id="data">
+    <h2><span class="pic">💾</span>データ入出力</h2>
+    <div class="tablewrap">
+    <table>
+      <tr><th>形式</th><th>方向</th><th>用途</th></tr>
+      <tr><td>JSON</td><td>保存 / 読込</td><td>完全バックアップ・他端末への移行。図のすべて(全シート・テンプレート・図の情報)を含みます。</td></tr>
+      <tr><td>PNG / SVG</td><td>保存・共有</td><td>表示中シート・範囲指定・全シート連結。図枠と解像度を選べ、<b>凡例(ステータス・回線速度・線種の意味)は自動生成</b>。共有ボタンからLINE/メール直送も。</td></tr>
+      <tr><td>印刷 / PDF</td><td>出力</td><td>A4・A3 / 横・縦、1シート1ページ。ヘッダーにタイトル・版数が入ります。</td></tr>
+      <tr><td>機器CSV</td><td>保存 / 取込</td><td>台帳用の機器一覧。<b>ホスト名/ラベル一致で既存機器を「更新」できる</b>ため、CSV保存 → Excelで保守期限やIPを一括修正 → 再取込、という往復が成立します(記入済みセルのみ反映・空欄では消えません)。</td></tr>
+      <tr><td>配線CSV(対向表)</td><td>保存 / 取込</td><td>A機器-Aポート-B機器-Bポートの対向表。取込時は機器をラベル名で照合し、見つからない機器は自動作成 → 自動整列と組み合わせると<b>対向表から図を自動生成</b>できます。</td></tr>
+      <tr><td>ポート台帳CSV</td><td>保存</td><td>1行1ポートで全機器のポートを書き出し(空き/重複も明記)。</td></tr>
+      <tr><td>drawio</td><td>保存</td><td>draw.io(diagrams.net)/ Visio への引き継ぎ用。</td></tr>
+      <tr><td>共有URL</td><td>作成 / 受取</td><td>図をURLそのものに埋め込んで共有。受け取った側はリンクを開くだけで取込を提案されます(サーバーには何も送られません)。</td></tr>
+    </table>
+    </div>
+    <div class="tip">CSVはExcelで文字化けしないBOM付きUTF-8で出力されます。取込用の見出しが分からないときは、各取込画面の<span class="ui">空のテンプレートCSVを保存</span>から始めるのが確実です。</div>
+  </section>
+
+  <!-- ───────── 検証・IP管理 ───────── -->
+  <section id="check">
+    <h2><span class="pic">✅</span>検証とIP管理</h2>
+    <div class="ops">
+      <div class="op"><div class="k">図の検証</div><div class="v">☰メニュー → <span class="ui">図の検証</span>で、IP重複・IP/マスク/GWの表記エラー・GWのセグメント外・VLAN不整合・セグメント不一致・ポート二重使用・未接続・<b>保守期限切れ/90日前</b>を一括チェック。結果から該当機器へジャンプできます。同一名の機器を複数シートに描いた場合はIP重複と数えません。</div></div>
+      <div class="op"><div class="k">IP管理</div><div class="v">☰メニュー → <span class="ui">IP管理</span>でセグメントをタップ(またはCIDR入力)すると、使用中IP(ジャンプ可)・GW予約・<b>空きIPの範囲</b>を全シート横断で集計。次に振るIPがすぐ分かります。</div></div>
+      <div class="op"><div class="k">CIDR検索</div><div class="v">検索欄に <span class="mono">10.0.0.0/22</span> のようにCIDRを入れると、範囲内のIPを持つ機器を全シート横断で検索できます。</div></div>
+      <div class="op"><div class="k">機器一覧</div><div class="v">☰メニュー → <span class="ui">機器一覧</span>で全シートの機器を一覧し、IP重複の確認やジャンプができます。</div></div>
+    </div>
+  </section>
+
+
+
+  <!-- ───────── 気づきにくい操作 ───────── -->
+  <section id="hidden">
+    <h2><span class="pic">🔍</span>気づきにくい操作の早見表</h2>
+    <p class="lead">画面にボタンが出ていない「長押し」「2回タップ」「ドラッグ」系の操作を1か所にまとめました。困ったらまずここを見てください。</p>
+    <div class="tablewrap">
+    <table>
+      <tr><th>やりたいこと</th><th>操作</th></tr>
+      <tr><td>図全体を画面に収める</td><td>キャンバスの空白を<b>すばやく2回タップ</b>(右下<span class="ui">全体</span>でも)</td></tr>
+      <tr><td>同じ部品を連続で置く</td><td>パレットの部品を<b>すばやく2回タップ</b>(バナーの<span class="ui">連続</span>ONでも)</td></tr>
+      <tr><td>シートを削除する</td><td>タブを<b>長押し</b>(タブ再タップ → 設定からでも)</td></tr>
+      <tr><td>テンプレートを共有・削除する</td><td>パレットのテンプレートを<b>長押し</b></td></tr>
+      <tr><td>線を機器を避けて曲げる</td><td>線を選択 → <b>線上の「+」をドラッグ</b>で経由点を追加(隣の点に重ねると削除)</td></tr>
+      <tr><td>線を別の機器へ付け替える</td><td>線を選択 → <b>端の●を相手の機器までドラッグ</b></td></tr>
+      <tr><td>線の書式をすばやく変える</td><td>線を選択 → <b>左上に出る線パレット</b>で経路・線種・速度をワンタップ</td></tr>
+      <tr><td>逆向きに引いた線を直す</td><td>線の編集 → <span class="ui">⇄ 両端の設定を入れ替え</span></td></tr>
+      <tr><td>フリック以外で線を引く</td><td>機器を選択 → <b>周囲の⊕をドラッグ</b>、または<span class="ui">接続</span> → 相手をタップ</td></tr>
+      <tr><td>接続した直後にポートを決める</td><td>画面下に出る<b>ポートチップ列</b>をタップ(ポート台帳のある機器のみ)</td></tr>
+      <tr><td>ジャンプ元のシートへ戻る</td><td>画面上部の<span class="ui">← シート名</span>ボタン</td></tr>
+      <tr><td>現行 / 更改後を切り替える</td><td><span class="ui">表示</span>のステータスボタンを<b>タップで巡回</b>(全表示 → 更改後 → 現行)</td></tr>
+      <tr><td>機器の誤ドラッグを防ぐ</td><td>機器の編集 → <span class="ui">位置を固定</span>(🔒)</td></tr>
+      <tr><td>Undoで何が戻るか確かめる</td><td>↶を押した瞬間のトーストに<b>操作名</b>が出ます(PCはボタンにマウスを乗せても)</td></tr>
+      <tr><td>選択バーの続きを出す</td><td>バー右端に「›」が見えている間は<b>横にスクロール</b>すると続きのボタンがあります(パレット・タブ行も同様)</td></tr>
+    </table>
+    </div>
+  </section>
+
+  <!-- ───────── 活用レシピ ───────── -->
+  <section id="recipe">
+    <h2><span class="pic">🧪</span>活用レシピ — 機能の組み合わせ例</h2>
+    <p class="lead">単機能の説明では見えにくい「現場で効く使い方」を4つ紹介します。</p>
+    <h3>① 全体図 → 拠点詳細図のドリルダウン資料</h3>
+    <p style="font-size:13px">シート1に全社WAN図を描き、各拠点の機器(または建物アイコン)に<b>リンク先シート</b>で拠点詳細図を設定。閲覧者はタップで掘り下げ、←ボタンで戻れます。<b>同名機器を両方のシートに置けば</b>台帳は1つに名寄せされ、検証・CSVでも二重カウントされません。</p>
+    <h3>② Excelの対向表から配線図を自動生成</h3>
+    <p style="font-size:13px">☰メニュー →「配線CSVから接続を一括登録」で<b>空のテンプレートCSV</b>を保存 → Excelで A機器/Aポート/B機器/Bポート を埋めて取込。<b>未登録の機器は自動作成</b>されるので、その後「表示中のシートを自動整列」を実行すれば、表から図が立ち上がります。</p>
+    <h3>③ 更改提案を1枚で — 現行/更改後の出し分け+差分着色</h3>
+    <p style="font-size:13px">現行図を描いたら更改部分を編集し、撤去機器に「廃止」・追加機器に「新設」のステータスを付与(過去の世代と比べる<b>差分着色</b>なら自動付与)。<span class="ui">表示</span>のステータス切替で<b>現行だけ/更改後だけ</b>を表示してそれぞれPNG出力すれば、before/afterが同じレイアウトで揃った提案資料になります。</p>
+    <h3>④ フロア図トレースで配線調査メモ</h3>
+    <p style="font-size:13px">現地でフロア図面を撮影 → <span class="ui">表示</span> → <span class="ui">下絵(フロア図)</span>で背景に敷き、AP・カメラ・配線をその上に配置。気づきは<b>メモ</b>部品で残し、帰社後に下絵を非表示にすれば図だけをきれいに出力できます。</p>
+  </section>
+
+  <!-- ───────── FAQ ───────── -->
+  <section id="faq">
+    <h2><span class="pic">❓</span>よくある質問</h2>
+    <details><summary>データはどこに保存されますか?クラウドに送られますか?</summary>
+      <p>すべて<b>お使いの端末のブラウザ内</b>(localStorage / IndexedDB)に保存されます。サーバーには一切送信されません。共有URLも、URL文字列そのものにデータを埋め込む方式で、サーバーには何も置かれません。</p></details>
+    <details><summary>機器を動かしたいのに線が引かれてしまいます</summary>
+      <p>触れて<b>すぐ</b>動かすと「接続」、<b>少し押さえてから</b>(振動が合図)動かすと「移動」です。判定時間は<span class="ui">表示</span> → <span class="ui">操作の調整</span>で長め(例: 300ms)に変えると移動しやすくなります。フリック配線自体をOFFにもできます。</p></details>
+    <details><summary>別の端末に図を移すには?</summary>
+      <p>☰メニュー →「データの保存・取込」→ <b>JSONを保存</b>したファイルを移行先で読み込むのが確実です。小さめの図ならば<b>共有URLを作成</b>してリンクを送る方法もあります。</p></details>
+    <details><summary>間違えてシートを消してしまいました</summary>
+      <p>削除直後ならトーストの<span class="ui">元に戻す</span>で復元できます。時間が経ってしまった場合は、プロジェクト管理の<b>世代バックアップ</b>(日次・直近10世代)から前日の状態に戻せます。</p></details>
+    <details><summary>複数の機器をまとめて動かしたい</summary>
+      <p>2通りあります。<b>恒常的なまとまり</b>なら「作図」カテゴリの<b>グループ枠</b>で囲む(枠ごと動きます)。<b>一時的</b>なら右下<span class="ui">複数</span>でなぞって選択し、そのままドラッグです。</p></details>
+    <details><summary>印刷すると図が紙からはみ出します</summary>
+      <p><span class="ui">表示</span> → <span class="ui">用紙ガイド</span>でA4/A3の比率枠を表示し、枠に収まるようレイアウトしてから印刷すると確実です。印刷ダイアログでは用紙サイズと向きを選べます。</p></details>
+    <details><summary>現行構成と更改後構成を1つの図で管理できますか?</summary>
+      <p>できます。機器・線に<b>変更ステータス</b>(新設/変更/廃止)を付け、<span class="ui">表示</span>のステータス切替で「現行だけ」「更改後だけ」を出し分けられます。出力画像にも反映されるので、提案書の before/after が1枚の図から作れます。</p></details>
+    <details><summary>ピンチでブラウザごと拡大したいのにできません</summary>
+      <p>ピンチは既定でキャンバスのズームに割り当てています。視力補助などでブラウザの拡大が必要な場合は、<span class="ui">表示</span> → <span class="ui">操作の調整</span> → <span class="ui">ブラウザのピンチ拡大を許可</span>をONにしてください。</p></details>
+    <details><summary>IPv6には対応していますか?</summary>
+      <p>IPv6表記の入力は可能ですが、IP重複チェックやセグメント計算などの<b>検証機能の対象外</b>(素通し)です。</p></details>
+  </section>
+
+  <!-- ───────── PCキー ───────── -->
+  <section id="keys">
+    <h2><span class="pic">⌨️</span>PCキーボードショートカット</h2>
+    <div class="tablewrap">
+    <table>
+      <tr><th>キー</th><th>動作</th></tr>
+      <tr><td><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd></td><td>選択中の機器を微移動(<kbd>Shift</kbd>併用で10px)</td></tr>
+      <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Y</kbd></td><td>取り消し / やり直し</td></tr>
+      <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>V</kbd></td><td>コピー / 貼り付け(別シートへも可)</td></tr>
+      <tr><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td><td>複製(連番)</td></tr>
+      <tr><td><kbd>Ctrl</kbd>+<kbd>F</kbd></td><td>検索</td></tr>
+      <tr><td><kbd>Delete</kbd></td><td>選択中の要素を削除</td></tr>
+    </table>
+    </div>
+  </section>
+
+  <div id="noResult">「<span id="nrWord"></span>」に一致する項目はありませんでした。<br>言い換えるか、検索を消して全体をご覧ください。</div>
+</main>
+
+<footer>
+  Network Diagram Builder — 端末内完結・オフライン動作のネットワーク構成図エディタ<br>
+  <a href="./">アプリを開く</a>
+</footer>
+
+<script>
+/* ページ内検索: セクション単位で絞り込み(語を含まない章を隠す)。
+   さらに章内の .op / details 行も個別に絞る */
+const searchEl = document.getElementById('search');
+const sections = [...document.querySelectorAll('main section')];
+const noResult = document.getElementById('noResult');
+let debounce = null;
+searchEl.addEventListener('input', () => {
+  clearTimeout(debounce);
+  debounce = setTimeout(() => {
+    const q = searchEl.value.trim().toLowerCase();
+    let hits = 0;
+    for (const sec of sections){
+      if (!q){
+        sec.classList.remove('nohit');
+        sec.querySelectorAll('.op,details').forEach(r => r.classList.remove('nohit'));
+        sec.querySelectorAll('details').forEach(d => d.open = false);
+        continue;
+      }
+      const rows = [...sec.querySelectorAll('.op,details')];
+      let secHit = false;
+      if (rows.length){
+        for (const r of rows){
+          const hit = r.textContent.toLowerCase().includes(q);
+          r.classList.toggle('nohit', !hit);
+          if (hit){ secHit = true; if (r.tagName === 'DETAILS') r.open = true; }
+        }
+      }
+      /* 行を持たない章(クイックスタート等)は本文全体で判定 */
+      if (!secHit) secHit = sec.textContent.toLowerCase().includes(q) && !rows.length;
+      sec.classList.toggle('nohit', !secHit);
+      if (secHit) hits++;
+    }
+    noResult.style.display = q && !hits ? 'block' : 'none';
+    document.getElementById('nrWord').textContent = searchEl.value.trim();
+  }, 120);
+});
+</script>
+</body>
+</html>
