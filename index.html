@@ -161,32 +161,6 @@ try {
   }
   #banner.show{display:flex}
   #banner.qnHide{display:none}
-  /* 初回インストール案内バー(v92): PWAとして追加できることに気づいてもらうための控えめな通知。
-     HTTPS配信かつ未インストールのときだけ、初回の数回だけ上部中央に出す。✕で消すと以後出さない。
-     位置はトースト/バナーと同じ上部中央。重なりは .pwaBarOn で下げて回避する */
-  #pwaBar{
-    position:absolute;top:10px;left:50%;transform:translateX(-50%) translateY(-8px);
-    display:none;align-items:center;gap:9px;z-index:23;
-    background:rgba(20,27,38,.96);color:var(--ink);
-    border:1px solid var(--accent);border-radius:999px;
-    padding:7px 8px 7px 14px;font-size:12px;white-space:nowrap;max-width:94vw;
-    box-shadow:0 6px 22px rgba(0,0,0,.42);
-    opacity:0;transition:opacity .22s, transform .22s;
-  }
-  #pwaBar.show{display:flex;opacity:1;transform:translateX(-50%) translateY(0)}
-  #pwaBar .pwaTxt{overflow:hidden;text-overflow:ellipsis;min-width:0}
-  #pwaBar .pwaGo{
-    flex:0 0 auto;background:var(--sel);color:#fff;border:0;border-radius:999px;
-    padding:5px 13px;font-size:12px;font-weight:700;cursor:pointer;
-  }
-  #pwaBar .pwaGo:active{filter:brightness(1.12)}
-  #pwaBar .pwaX{
-    flex:0 0 auto;background:transparent;color:var(--ink-dim);border:0;
-    font-size:15px;line-height:1;cursor:pointer;padding:4px 7px;border-radius:50%;
-  }
-  #pwaBar .pwaX:active{background:rgba(255,255,255,.08)}
-  /* 案内バー表示中は、操作トーストを少し下げて重なりを避ける */
-  .pwaBarOn #toast{top:54px}
   #quickName{
     position:absolute;top:10px;left:50%;transform:translateX(-50%);
     display:none;align-items:center;gap:7px;z-index:23;
@@ -572,11 +546,6 @@ try {
     <div id="qpRows"></div>
   </div>
   <div id="toast"></div>
-  <div id="pwaBar" role="status" aria-live="polite">
-    <span class="pwaTxt" id="pwaBarTxt"></span>
-    <button class="pwaGo" id="pwaBarGo"></button>
-    <button class="pwaX" id="pwaBarX" title="閉じる" aria-label="閉じる">✕</button>
-  </div>
   <div id="banner"><span id="bannerText"></span><button id="bannerChain" style="display:none">連続</button><button id="bannerCancel">終了</button></div>
   <div id="minimap"><svg id="minimapSvg" width="150" height="104"></svg></div>
   <div id="rangeBox"></div>
@@ -792,7 +761,6 @@ try {
 <input type="file" id="wireCsvInput" accept=".csv,text/csv" style="display:none">
 
 <script>
-/* ════════ src/js/01_defs-model.js ════════ */
 "use strict";
 
 /* ───────── constants & icons ───────── */
@@ -1246,12 +1214,6 @@ const ICONS = {
   cloud:     {name:"クラウド",    draw:`<path d="M15 32a7 7 0 0 1-1-13.9A10 10 0 0 1 33 16a8 8 0 0 1 2 15.7z" fill="none" stroke="#33475f" stroke-width="2" stroke-linejoin="round"/>`},
   internet:  {name:"インターネット",draw:`<circle cx="24" cy="24" r="15" fill="none" stroke="#33475f" stroke-width="2"/><ellipse cx="24" cy="24" rx="7" ry="15" fill="none" stroke="#33475f" stroke-width="1.5"/><path d="M9.5 19h29M9.5 29h29" stroke="#33475f" stroke-width="1.5"/>`},
   user:      {name:"利用者",     draw:`<circle cx="24" cy="17" r="7" fill="none" stroke="#33475f" stroke-width="2"/><path d="M11 39c1.5-8 6.5-12 13-12s11.5 4 13 12" fill="none" stroke="#33475f" stroke-width="2" stroke-linecap="round"/>`},
-  vpn:       {name:"VPN装置",    draw:`<ellipse cx="10" cy="24" rx="4" ry="10" fill="none" stroke="#33475f" stroke-width="2"/><ellipse cx="38" cy="24" rx="4" ry="10" fill="none" stroke="#33475f" stroke-width="2"/><path d="M10 14h28M10 34h28" stroke="#33475f" stroke-width="2"/><path d="M15 24h18" stroke="#e2725b" stroke-width="2.2" stroke-dasharray="4 3.5" stroke-linecap="round"/>`},
-  nas:       {name:"NAS",        draw:`<rect x="10" y="9" width="28" height="30" rx="3" fill="none" stroke="#33475f" stroke-width="2"/><rect x="14" y="14" width="20" height="6.5" rx="1.5" fill="none" stroke="#3fb8af" stroke-width="1.6"/><rect x="14" y="23.5" width="20" height="6.5" rx="1.5" fill="none" stroke="#3fb8af" stroke-width="1.6"/><circle cx="17" cy="34.5" r="1.6" fill="#3fb8af"/><path d="M22 34.5h12" stroke="#33475f" stroke-width="1.6" stroke-linecap="round"/>`},
-  auth:      {name:"認証サーバー", draw:`<circle cx="17" cy="16" r="6" fill="none" stroke="#33475f" stroke-width="2"/><path d="M7 38c1.2-7 5.2-10.5 10-10.5 3 0 5.7 1.4 7.6 4" fill="none" stroke="#33475f" stroke-width="2" stroke-linecap="round"/><circle cx="32" cy="19" r="4.5" fill="none" stroke="#3fb8af" stroke-width="2"/><path d="M35.2 22.2L42 29M39 25.8l-2.6 2.6M42 29l-2.6 2.6" stroke="#3fb8af" stroke-width="2" fill="none" stroke-linecap="round"/>`},
-  tablet:    {name:"タブレット",  draw:`<rect x="8" y="11" width="32" height="26" rx="3" fill="none" stroke="#33475f" stroke-width="2"/><path d="M12 11v26" stroke="#33475f" stroke-width="1.4"/><circle cx="36" cy="24" r="1.8" fill="#3fb8af"/>`},
-  iot:       {name:"IoT機器",     draw:`<rect x="15" y="17" width="18" height="18" rx="3" fill="none" stroke="#33475f" stroke-width="2"/><path d="M19 17v-4M24 17v-4M29 17v-4M19 35v4M24 35v4M29 35v4M15 21h-4M15 26h-4M15 31h-4M33 21h4M33 26h4M33 31h4" stroke="#33475f" stroke-width="1.6" stroke-linecap="round"/><circle cx="24" cy="26" r="3" fill="#3fb8af"/>`},
-  rack:      {name:"ラック",      draw:`<rect x="13" y="5" width="22" height="37" rx="2" fill="none" stroke="#33475f" stroke-width="2"/><path d="M13 13.5h22M13 22h22M13 30.5h22" stroke="#33475f" stroke-width="1.6"/><circle cx="31" cy="9.2" r="1.6" fill="#3fb8af"/><circle cx="31" cy="17.7" r="1.6" fill="#3fb8af"/><circle cx="31" cy="26.2" r="1.6" fill="#3fb8af"/><path d="M16 42l-2 4M32 42l2 4" stroke="#33475f" stroke-width="2" stroke-linecap="round"/>`},
   generic:   {name:"その他機器",  draw:`<rect x="9" y="13" width="30" height="22" rx="4" fill="none" stroke="#33475f" stroke-width="2"/><circle cx="17" cy="24" r="1.9" fill="#3fb8af"/><circle cx="24" cy="24" r="1.9" fill="#3fb8af"/><circle cx="31" cy="24" r="1.9" fill="#3fb8af"/>`},
 };
 
@@ -1290,7 +1252,6 @@ const ZONE_ICON = `<rect x="7" y="9" width="34" height="30" rx="4" fill="none" s
 const NOTE_ICON = `<path d="M10 8h28v24l-8 8H10z" fill="none" stroke="#8294ab" stroke-width="2" stroke-linejoin="round"/><path d="M30 40v-8h8" fill="none" stroke="#8294ab" stroke-width="2" stroke-linejoin="round"/><path d="M16 17h16M16 24h16" stroke="#3fb8af" stroke-width="2" stroke-linecap="round"/>`;
 const TEXT_ICON = `<text x="24" y="31" font-size="27" font-weight="700" text-anchor="middle" fill="#3fb8af" font-family="serif">T</text><path d="M11 40h26" stroke="#8294ab" stroke-width="2" stroke-dasharray="3 3" stroke-linecap="round"/>`;
 
-/* ════════ src/js/02_state-ui.js ════════ */
 /* ───────── document ───────── */
 function defaultMeta(){
   return { title:'', author:'', rev:'1.0', history:[] };
@@ -1714,9 +1675,6 @@ function updateBanner(){
     linkChain = false;
     b.classList.remove('show');
   }
-  /* 配置・接続・複数選択などモードバナーが出る操作を始めたら、初回インストール案内は引っ込める
-     (操作ヒントの邪魔をしない。このセッションでは再表示しないが履歴は未処理のまま) */
-  if (b.classList.contains('show') && typeof pwaHideInstallBar === 'function') pwaHideInstallBar();
   const cb = document.getElementById('bannerChain');
   /* 「連続」ボタンは接続中だけでなく配置中も表示する(連続配置の入口を可視化)。
      メモ・テキストは配置直後に編集を開く仕様のため連続配置の対象外 */
@@ -1923,7 +1881,6 @@ const appConfirm = (title, message, okLabel, danger) =>
 const appAlert = (title, message) =>
   appDialog({ title, message, okLabel: '閉じる', alertOnly: true });
 
-/* ════════ src/js/03_palette-geometry.js ════════ */
 /* ───────── multi select ───────── */
 const btnMulti = document.getElementById('btnMulti');
 function setMultiMode(on){
@@ -2091,11 +2048,11 @@ const PAL_CATS = [
   { id:'tpl',    name:'テンプレート' },
   { id:'draw',   name:'作図',       items:['__zone','__note','__text','bus'] },
   { id:'nw',     name:'NW機器',     items:['router','l3switch','l2switch','ap','lb'] },
-  { id:'sec',    name:'セキュリティ', items:['firewall','utm','vpn','proxy','camera'] },
-  { id:'sv',     name:'サーバー',    items:['server','vmhost','db','storage','nas','auth'] },
-  { id:'edge',   name:'端末',       items:['pc','mobile','tablet','printer','phone','user'] },
+  { id:'sec',    name:'セキュリティ', items:['firewall','utm','proxy','camera'] },
+  { id:'sv',     name:'サーバー',    items:['server','vmhost','db','storage'] },
+  { id:'edge',   name:'端末',       items:['pc','mobile','printer','phone','user'] },
   { id:'site',   name:'拠点/回線',  items:['building','wan','cloud','internet','onu'] },
-  { id:'fac',    name:'設備/他',    items:['ups','patch','rack','iot','onu','generic'] },
+  { id:'fac',    name:'設備/他',    items:['ups','patch','onu','generic'] },
 ];
 let palCat = 'nw';
 let recentTypes = [];
@@ -2947,7 +2904,6 @@ function updateSegLegend(){
   el.classList.add('show');
 }
 
-/* ════════ src/js/04_render.js ════════ */
 /* ───────── drawing helpers ───────── */
 function linkSvg(l, selected, bg, po, hops, msel){
   const g = linkGeom(state, l, po);
@@ -3804,7 +3760,6 @@ function deleteSelection(){
   render();
 }
 
-/* ════════ src/js/05_interact.js ════════ */
 /* ───────── pointer interaction ───────── */
 const pointers = new Map();
 let drag = null;
@@ -4320,9 +4275,8 @@ function applyDragMove(cx, cy){
   if (drag.kind === 'nodepend'){
     clearTimeout(drag.timer);
     if (flickConnect && !drag.armedMove){
-      /* 押してすぐ動かした=フリック → 接続線を引く(離した場所が空白ならキャンセル)。
-         flick:true は誤フリック(空振りキャンセル)時の案内表示に使う */
-      drag = { kind:'connect', from: drag.id, snapshot:null, moved:true, flick:true,
+      /* 押してすぐ動かした=フリック → 接続線を引く(離した場所が空白ならキャンセル) */
+      drag = { kind:'connect', from: drag.id, snapshot:null, moved:true,
                sx: drag.sx, sy: drag.sy, fx: drag.fx, fy: drag.fy, hover:null };
     } else if (drag.locked){
       drag = { kind:'lockedtap', wasSel: drag.wasSel, moved:true, sx: drag.sx, sy: drag.sy };
@@ -4592,11 +4546,6 @@ function endPointer(e){
         state.links.push(l);
         selection = { kind:'link', id: l.id };
         if (quickPort) showQuickPort(l);   // 接続直後のポート即時選択(設定でON時)
-      } else if (drag.flick){
-        /* フリック接続の空振り(空白で離した/同じ機器に戻した)= 「移動のつもりが
-           線が生えた」誤操作の可能性が高い。初回だけ移動方法と設定変更先を案内 */
-        hintOnce('flickmiss',
-          '接続をキャンセルしました。機器を移動したいときは、少し押し込んでから動かします(この挙動は 右下「表示」→「操作の調整」で変更できます)', 4600);
       }
     }
     drag = null;
@@ -4679,7 +4628,6 @@ function endPointer(e){
 svg.addEventListener('pointerup', endPointer);
 svg.addEventListener('pointercancel', endPointer);
 
-/* ════════ src/js/06_edit.js ════════ */
 /* ───────── edit sheet ───────── */
 /* ───────── セクション開閉の記憶 ─────────
    「ポート台帳は毎回使う」「見た目は触らない」等、人によって使うセクションが
@@ -5696,7 +5644,6 @@ svg.addEventListener('pointerup', e => {
   }
 });
 
-/* ════════ src/js/07_data-io.js ════════ */
 /* ───────── search ───────── */
 const searchSheetEl = document.getElementById('searchSheet');
 const searchMask = document.getElementById('searchMask');
@@ -7206,7 +7153,6 @@ document.getElementById('btnLineDef').onclick = () => {
   openLineDefaultPicker();
 };
 
-/* ════════ src/js/08_project.js ════════ */
 /* ───────── プロジェクト & 自動保存(端末内に複数セットを保持)───────── */
 /* 本体データはIndexedDBに保存(localStorageの5MB制限を回避、Blob級の容量)。
    索引・出力設定など小さいデータはlocalStorageのまま。
@@ -7881,7 +7827,6 @@ document.getElementById('mReset').onclick = async () => {
   toast('初期サンプルで上書きしました');
 };
 
-/* ════════ src/js/09_menus-export.js ════════ */
 /* ───────── menu sheet ───────── */
 const menuSheet = document.getElementById('menuSheet');
 const menuMask = document.getElementById('menuMask');
@@ -8981,7 +8926,6 @@ document.getElementById('btnLayers').onclick = () => {
   updateMenuMore(layerMenuEl);   // 表示後でないとスクロール量が確定しない
 };
 
-/* ════════ src/js/10_init.js ════════ */
 /* ───────── 下絵(フロア図・背景画像)─────────
    写真・図面画像をシートの最背面に敷き、その上をなぞって作図(トレース)する。
    - シート単位。取り込み時に縮小JPEG化して自動保存(IndexedDB)を圧迫しない
@@ -9524,8 +9468,6 @@ async function initApp(){
       ? `「${curProj().name}」を復元しました(左上のプロジェクト名から切替できます)`
       : 'パレット「テンプレート」に部品セット、線ラベルは選択中にドラッグで移動できます', 4000);
   });
-  /* 歓迎トーストが消えた頃に、初回のインストール案内バーを出す(出す条件は pwaMaybeShowInstallBar 側で判定) */
-  setTimeout(() => { pwaInstallBarReady = true; pwaMaybeShowInstallBar(); }, 4600);
 }
 /* ═════════════ PWA(v90)═════════════
    GitHub Pages 等の HTTPS 配信を前提に、マニフェスト・アイコン・Service Worker を
@@ -9545,107 +9487,13 @@ function pwaRegisterSw(){
     .catch(() => { pwaSwState = '登録失敗(sw.js が見つかりません)'; });
 }
 
-/* Android Chrome / PC Chrome・Edge等のインストールプロンプトを横取りして自前UIから出す */
+/* Android Chrome等のインストールプロンプトを横取りして自前ボタンから出す */
 let pwaInstallEvt = null;
-let pwaInstallBarReady = false;     // 起動直後の歓迎トーストと競合しないよう、initApp側で頃合いに true へ
-let pwaBarShownThisSession = false; // 1セッションにつき案内は1回まで
-let pwaBarTimer = null;
-window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pwaInstallEvt = e; pwaMaybeShowInstallBar(); });
-window.addEventListener('appinstalled', () => {
-  pwaInstallEvt = null;
-  pwaMarkInstallHandled();
-  pwaHideInstallBar();
-  toast('ホーム画面に追加しました。次回からアプリとして起動できます', 4000);
-});
-
-/* ── 初回インストール案内バー(v92)─────────────────────────────────
-   「右上の ☰ メニュー →『アプリとして使う』からインストールできる」ことに気づいてもらうための
-   控えめな通知。次の条件をすべて満たすときだけ、上部中央に小さく出す:
-     ・HTTPSで配信されている(=インストール可能な環境。file:// では出さない)
-     ・まだアプリとして起動していない(standalone でない)
-     ・以前に「閉じた / インストールした / PWAメニューを自分で開いた」履歴がない
-     ・案内の表示回数が上限(PWA_BAR_MAX_SHOWS)未満
-   Chrome系はその場でインストール、iOS Safari は追加手順(共有→ホーム画面に追加)を開く。
-   インストールできないブラウザ(PC Firefox・iOS上のChrome等)では何も出さない */
-const PWA_BAR_MAX_SHOWS = 3;   // 無視され続けても、この回数で案内を止める(1にすれば文字どおり初回のみ)
-function pwaIsStandalone(){
-  return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
-}
-function pwaIsIOSSafari(){
-  const ua = navigator.userAgent || '';
-  const iOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  const webkit = /WebKit/.test(ua);
-  const otherIOSBrowser = /CriOS|FxiOS|EdgiOS|OPiOS|GSA/.test(ua);   // iOS上のChrome/Firefox/Edge/Google等は「ホーム画面に追加」不可
-  return iOS && webkit && !otherIOSBrowser;
-}
-function pwaInstallHandled(){
-  try { return localStorage.getItem('nd-pwa-install-done') === '1'; } catch { return false; }
-}
-function pwaMarkInstallHandled(){   // 閉じる/インストール/PWAメニューを開いたら、以後は案内しない
-  try { localStorage.setItem('nd-pwa-install-done', '1'); } catch {}
-}
-function pwaBarShowCount(){
-  try { return parseInt(localStorage.getItem('nd-pwa-install-shows') || '0', 10) || 0; } catch { return 0; }
-}
-function pwaBumpBarShowCount(){
-  try { localStorage.setItem('nd-pwa-install-shows', String(pwaBarShowCount() + 1)); } catch {}
-}
-function pwaHideInstallBar(){
-  clearTimeout(pwaBarTimer);
-  const bar = document.getElementById('pwaBar');
-  if (bar) bar.classList.remove('show');
-  const wrap = document.getElementById('canvasWrap');
-  if (wrap) wrap.classList.remove('pwaBarOn');
-}
-function pwaMaybeShowInstallBar(){
-  if (!pwaInstallBarReady || pwaBarShownThisSession) return;
-  if (location.protocol !== 'https:') return;
-  if (pwaIsStandalone() || pwaInstallHandled()) return;
-  if (pwaBarShowCount() >= PWA_BAR_MAX_SHOWS) return;
-
-  const canPrompt = !!pwaInstallEvt;     // Chrome系: その場でインストールできる
-  const iosSafari = pwaIsIOSSafari();    // iOS Safari: 共有→ホーム画面に追加
-  if (!canPrompt && !iosSafari) return;  // インストールできない環境では出さない
-
-  const bar = document.getElementById('pwaBar');
-  const txt = document.getElementById('pwaBarTxt');
-  const go  = document.getElementById('pwaBarGo');
-  const x   = document.getElementById('pwaBarX');
-  if (!bar || !txt || !go || !x) return;
-
-  if (canPrompt){
-    txt.textContent = '📲 アプリとして追加できます';
-    go.textContent = 'インストール';
-    go.onclick = async () => {
-      const evt = pwaInstallEvt;
-      pwaMarkInstallHandled();
-      pwaHideInstallBar();
-      if (!evt){ document.getElementById('mPwa').click(); return; }   // 取りこぼし時は説明ダイアログへ
-      evt.prompt();
-      try { const r = await evt.userChoice; if (r && r.outcome === 'accepted') pwaInstallEvt = null; } catch {}
-    };
-  } else {
-    txt.textContent = '📲 ホーム画面に追加して使えます';
-    go.textContent = '追加方法';
-    go.onclick = () => { pwaMarkInstallHandled(); pwaHideInstallBar(); document.getElementById('mPwa').click(); };
-  }
-  x.onclick = () => { pwaMarkInstallHandled(); pwaHideInstallBar(); };   // ✕=今後は案内しない
-
-  pwaBarShownThisSession = true;
-  pwaBumpBarShowCount();
-  const wrap = document.getElementById('canvasWrap');
-  if (wrap) wrap.classList.add('pwaBarOn');
-  bar.classList.add('show');
-  /* 操作の邪魔にならないよう、一定時間ふれられなければそっと引っ込める。
-     このセッションでは再表示しないが、履歴は「未処理」のまま=次回起動時にまた案内できる(上限まで) */
-  clearTimeout(pwaBarTimer);
-  pwaBarTimer = setTimeout(pwaHideInstallBar, 13000);
-}
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pwaInstallEvt = e; });
+window.addEventListener('appinstalled', () => { pwaInstallEvt = null; toast('ホーム画面に追加しました。次回からアプリとして起動できます', 4000); });
 
 document.getElementById('mPwa').onclick = () => {
   closeMenu();
-  pwaMarkInstallHandled();   // 自分でPWAメニューを開いた人にはもう案内バーを出さない
-  pwaHideInstallBar();
   const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
   const https = location.protocol === 'https:';
   const isFile = location.protocol === 'file:';
